@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>養寵物選擇器：小樹 or 電子雞</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background: linear-gradient(to bottom, #87CEEB, #E0F7FA); margin: 0; padding: 20px; min-height: 100vh; }
+        h1 { color: #2E8B57; }
+        button { padding: 15px 30px; font-size: 20px; margin: 20px; background: #4CAF50; color: white; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        button:hover { background: #45a049; }
+        button:disabled { background: #cccccc; cursor: not-allowed; }
+        .section { display: none; margin: 50px auto; max-width: 600px; }
+        .active { display: block; }
+        .pet { font-size: 120px; margin: 30px; }
+        p { font-size: 24px; color: #333; }
+        .status { font-size: 18px; color: #666; margin: 20px; }
+    </style>
+</head>
+<body>
+    <h1>歡迎來養寵物！🐾</h1>
+    <p>選擇你要養的：</p>
+    <button onclick="choose('tree')">養一棵小樹 🌱</button>
+    <button onclick="choose('chick')">養一隻電子雞 🐔</button>
+
+    <!-- 養樹區 -->
+    <div id="treeSection" class="section">
+        <h2>我的小樹苗</h2>
+        <p>每天來澆水，讓樹長大吧！</p>
+        <div class="pet" id="treePet">🌱</div>
+        <p id="treeMessage">今天還沒澆水哦～</p>
+        <button id="waterBtn">澆水 💧</button>
+        <div class="status" id="treeDays">已澆水 0 天</div>
+        <button onclick="back()">回選擇</button>
+    </div>
+
+    <!-- 電子雞區 -->
+    <div id="chickSection" class="section">
+        <h2>我的電子雞</h2>
+        <p>照顧它，讓它開心！🐥</p>
+        <div class="pet" id="chickPet">🐥</div>
+        <p id="chickMessage">肚子餓了～</p>
+        <button onclick="action('feed')">餵食 🍎</button>
+        <button onclick="action('play')">玩耍 ⚽</button>
+        <button onclick="action('sleep')">睡覺 💤</button>
+        <div class="status" id="chickStatus">幸福度：50</div>
+        <button onclick="back()">回選擇</button>
+    </div>
+
+    <script>
+        function choose(type) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            if (type === 'tree') {
+                document.getElementById('treeSection').classList.add('active');
+                loadTree();
+            } else {
+                document.getElementById('chickSection').classList.add('active');
+                loadChick();
+            }
+        }
+
+        function back() {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        }
+
+        // === 養樹部分 ===
+        const treePets = ['🌱', '🌿', '🌳', '🪴'];
+        const treeMsgs = ['這是一顆小小的種子～', '發芽了！好可愛～', '樹變大了！繼續加油！', '哇！大樹長成了！謝謝你 🥰'];
+
+        function getToday() { return new Date().toISOString().slice(0, 10); }
+
+        function loadTree() {
+            let count = parseInt(localStorage.getItem('treeCount') || '0');
+            let lastDate = localStorage.getItem('treeLast') || '';
+            const today = getToday();
+            const stage = Math.min(count, 3);
+
+            document.getElementById('treePet').textContent = treePets[stage];
+            document.getElementById('treeDays').textContent = `已澆水 ${count} 天`;
+            const waterBtn = document.getElementById('waterBtn');
+
+            if (lastDate === today) {
+                document.getElementById('treeMessage').textContent = '明天再來澆水哦！';
+                waterBtn.disabled = true;
+                waterBtn.textContent = '今天已澆水 ✅';
+            } else {
+                document.getElementById('treeMessage').textContent = treeMsgs[stage];
+                waterBtn.disabled = false;
+                waterBtn.textContent = '澆水 💧';
+            }
+
+            waterBtn.onclick = () => {
+                if (lastDate === today) return;
+                count++;
+                localStorage.setItem('treeCount', count);
+                localStorage.setItem('treeLast', today);
+                loadTree();  // 刷新
+            };
+        }
+
+        // === 電子雞部分 ===
+        const chickPets = ['🐥', '🐤', '🐔', '🥚'];  // 正常、開心、生氣、離開（如果太低）
+        let happiness = 50;
+
+        function loadChick() {
+            happiness = parseInt(localStorage.getItem('chickHappy') || '50');
+            updateChick();
+        }
+
+        function updateChick() {
+            const pet = document.getElementById('chickPet');
+            const msg = document.getElementById('chickMessage');
+            const status = document.getElementById('chickStatus');
+
+            if (happiness > 80) { pet.textContent = '🐤'; msg.textContent = '超開心！謝謝主人～❤️'; }
+            else if (happiness > 50) { pet.textContent = '🐥'; msg.textContent = '心情不錯！'; }
+            else if (happiness > 20) { pet.textContent = '🐔'; msg.textContent = '有點不爽…快來陪我！'; }
+            else { pet.textContent = '🥚'; msg.textContent = '它生氣離開了…重新開始吧 😢'; happiness = 50; }
+
+            status.textContent = `幸福度：${happiness}`;
+            localStorage.setItem('chickHappy', happiness);
+        }
+
+        function action(type) {
+            if (type === 'feed') happiness = Math.min(100, happiness + 20);
+            if (type === 'play') happiness = Math.min(100, happiness + 15);
+            if (type === 'sleep') happiness = Math.min(100, happiness + 10);
+            if (happiness <= 20) happiness = 50;  // 重置
+            updateChick();
+        }
+    </script>
+</body>
+</html>
