@@ -1,256 +1,152 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-&nbsp;&nbsp;&nbsp;&nbsp;<meta charset="UTF-8">
-&nbsp;&nbsp;&nbsp;&nbsp;<meta name="viewport" content="width=device-width, initial-scale=1.0">
-&nbsp;&nbsp;&nbsp;&nbsp;<title>午夜走廊 - 敢玩嗎？</title>
-&nbsp;&nbsp;&nbsp;&nbsp;<style>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;* { margin: 0; padding: 0; overflow: hidden; }
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;body {
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;background: #000;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;font-family: 'Courier New', monospace;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;color: #fff;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;cursor: none;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;user-select: none;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;touch-action: none;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;canvas { display: block; }
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#ui {
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;position: absolute; top: 20px; left: 20px;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;font-size: 18px; text-shadow: 0 0 10px #f00;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;z-index: 10;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#start {
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;font-size: 24px; text-align: center; cursor: pointer;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;text-shadow: 0 0 20px #fff;
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#start:hover { color: #f00; }
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.shake { animation: shake 0.5s infinite; }
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;@keyframes shake {
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;0%, 100% { transform: translateX(0); }
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;25% { transform: translateX(-10px); }
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;75% { transform: translateX(10px); }
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}
-&nbsp;&nbsp;&nbsp;&nbsp;</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡單番茄鐘 + 任務清單</title>
 </head>
 <body>
-&nbsp;&nbsp;&nbsp;&nbsp;<canvas id="canvas"></canvas>
-&nbsp;&nbsp;&nbsp;&nbsp;<div id="ui">
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div>距離盡頭: <span id="distance">???m</span></div>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<div>WASD/箭頭前進 | E開門</div>
-&nbsp;&nbsp;&nbsp;&nbsp;</div>
-&nbsp;&nbsp;&nbsp;&nbsp;<div id="start">點擊開始...<br><small>關掉音量？膽小鬼</small></div>
-    <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-        // 遊戲狀態
-        let gameState = 'start'; // start, playing, scare, end
-        let playerX = canvas.width / 2;
-        let playerY = canvas.height / 2;
-        let torchAngle = 0;
-        let distance = 100; // 到盡頭距離
-        let speed = 2;
-        let shakeIntensity = 0;
-        let ghostTimer = 0;
-        let heartBeat = 0;
-        // 鍵盤控制
-        const keys = {};
-        document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
-        document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
-        // 滑鼠/觸控手電筒
-        canvas.addEventListener('mousemove', e => {
-            if (gameState === 'playing') {
-                torchAngle = Math.atan2(e.clientY - playerY, e.clientX - playerX);
-            }
-        });
-        canvas.addEventListener('touchmove', e => {
-            e.preventDefault();
-            const touch = e.touches[0];
-            torchAngle = Math.atan2(touch.clientY - playerY, touch.clientX - playerX);
-        });
-        // 開始遊戲
-        document.getElementById('start').onclick = () => {
-            document.getElementById('start').style.display = 'none';
-            gameState = 'playing';
-            initAudio();
-        };
-        // 音效 (Base64 內嵌，免網路)
-        let audioCtx;
-        function initAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        // 心跳音效
-        function playHeartbeat() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.setValueAtTime(60, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.3, audioCtx.currentTime + 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + 0.5);
-        }
-        // 腳步聲
-        function playFootstep() {
-            if (!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.2);
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.15, audioCtx.currentTime + 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.3);
-        }
-        // Jumpscare 尖叫 (高頻噪音 + 低頻)
-        function playScream() {
-            if (!audioCtx) return;
-            const osc1 = audioCtx.createOscillator();
-            const osc2 = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc1.connect(gain);
-            osc2.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc1.frequency.value = 800;
-            osc2.frequency.value = 1200;
-            gain.gain.setValueAtTime(0, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.8, audioCtx.currentTime + 0.1);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2);
-            osc1.start();
-            osc2.start();
-            osc1.stop(audioCtx.currentTime + 2);
-            osc2.stop(audioCtx.currentTime + 2);
-        }
-        // 繪製走廊 (透視效果)
-        function drawCorridor() {
-            // 地板/牆壁漸層黑
-            const grad = ctx.createRadialGradient(canvas.width/2, canvas.height, 0, canvas.width/2, canvas.height, 400);
-            grad.addColorStop(0, '#111');
-            grad.addColorStop(0.5, '#000');
-            grad.addColorStop(1, '#000');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // 牆壁線條 (移動感)
-            ctx.strokeStyle = '#333';
-            ctx.lineWidth = 2;
-            for (let i = 0; i < 20; i++) {
-                const wallX = (canvas.width / 2) + Math.sin(Date.now() * 0.001 + i) * 50;
-                ctx.beginPath();
-                ctx.moveTo(wallX, 0);
-                ctx.lineTo(wallX + Math.random()*20 - 10, canvas.height);
-                ctx.stroke();
-            }
-            // 盡頭紅門 (距離近時出現)
-            if (distance < 30) {
-                ctx.fillStyle = '#f00';
-                ctx.fillRect(canvas.width/2 - 50, canvas.height/2 - 100, 100, 200);
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 40px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('E', canvas.width/2, canvas.height/2 + 20);
-            }
-        }
-        // 手電筒光束
-        function drawTorch() {
-            ctx.save();
-            ctx.translate(playerX, playerY);
-            ctx.rotate(torchAngle);
-            const lightGrad = ctx.createRadialGradient(0, 0, 0, 200, 0, 400);
-            lightGrad.addColorStop(0, 'rgba(255,255,200,0.8)');
-            lightGrad.addColorStop(0.3, 'rgba(255,255,100,0.4)');
-            lightGrad.addColorStop(0.7, 'rgba(255,100,0,0.1)');
-            lightGrad.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = lightGrad;
-            ctx.fillRect(0, -20, 500, 40);
-            ctx.restore();
-        }
-        // 鬼影隨機閃現
-        function drawGhost() {
-            if (Math.random() < 0.02 && distance > 20) { // 隨機出現
-                ctx.save();
-                ctx.globalAlpha = 0.6;
-                ctx.fillStyle = '#f0f';
-                ctx.beginPath();
-                ctx.arc(canvas.width/2 + (Math.random()-0.5)*200, canvas.height/2 + 100 + (Math.random()-0.5)*100, 50 + Math.random()*30, 0, Math.PI*2);
-                ctx.fill();
-                ctx.restore();
-                playFootstep();
-                ghostTimer = 60; // 短暫抖動
-            }
-            if (ghostTimer > 0) {
-                shakeIntensity = 10;
-                ghostTimer--;
-            }
-        }
-        // Jumpscare
-        function jumpscare() {
-            gameState = 'scare';
-            playScream();
-            shakeIntensity = 50;
-            setTimeout(() => {
-                gameState = 'end';
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 60px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('你死了...', canvas.width/2, canvas.height/2);
-                ctx.font = '30px Arial';
-                ctx.fillText('點擊重試', canvas.width/2, canvas.height/2 + 60);
-            }, 3000);
-        }
-        // 主迴圈
-        function gameLoop() {
-            // 抖動效果
-            ctx.save();
-            if (shakeIntensity > 0) {
-                ctx.translate(Math.random() * shakeIntensity - shakeIntensity/2, Math.random() * shakeIntensity - shakeIntensity/2);
-                shakeIntensity *= 0.95;
-            }
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawCorridor();
-            drawTorch();
-            drawGhost();
-            if (gameState === 'playing') {
-                // 移動
-                if (keys['w'] || keys['arrowup']) distance -= speed;
-                if (keys['s'] || keys['arrowdown']) distance += speed * 0.5;
-                if (keys['e'] && distance < 30) jumpscare();
-                // 更新 UI
-                document.getElementById('distance').textContent = Math.max(0, Math.floor(distance)) + 'm';
-                // 心跳加速
-                heartBeat += 0.1;
-                if (Math.floor(heartBeat) % 30 === 0) playHeartbeat();
-                // 遊戲結束
-                if (distance <= 0) jumpscare();
-            }
-            ctx.restore();
-            requestAnimationFrame(gameLoop);
-        }
-        // 重試
-        canvas.onclick = () => {
-            if (gameState === 'end') {
-                gameState = 'playing';
-                distance = 100;
-                shakeIntensity = 0;
-                heartBeat = 0;
-            }
-        };
-        gameLoop();
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            playerX = canvas.width / 2;
-            playerY = canvas.height / 2;
-        });
-    </script>
+    <h1>番茄鐘計時器</h1>
+    
+    <div>
+        <h2 id="timer">25:00</h2>
+        <p id="status">工作時間（25分鐘）</p>
+        <button id="startBtn">開始</button>
+        <button id="resetBtn">重置</button>
+    </div>
+    
+    <hr>
+    
+    <h2>任務清單</h2>
+    <input type="text" id="taskInput" placeholder="輸入新任務，按Enter新增">
+    <ul id="taskList"></ul>
+    
+    <script>
+        // === 計時器部分 ===
+        let minutes = 25;
+        let seconds = 0;
+        let timerInterval = null;
+        let isWorking = true;  // true: 工作, false: 休息
+        
+        const timerDisplay = document.getElementById('timer');
+        const statusDisplay = document.getElementById('status');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        function updateDisplay() {
+            timerDisplay.textContent = `\( {minutes.toString().padStart(2, '0')}: \){seconds.toString().padStart(2, '0')}`;
+        }
+        
+        function startTimer() {
+            if (timerInterval) return;  // 已經在跑就不要重複
+            
+            timerInterval = setInterval(() => {
+                if (seconds === 0) {
+                    if (minutes === 0) {
+                        // 計時結束，切換工作/休息
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        startBtn.textContent = '開始';
+                        
+                        alert(isWorking ? '工作時間結束！該休息了～' : '休息時間結束！繼續努力！');
+                        
+                        // 自動切換
+                        isWorking = !isWorking;
+                        if (isWorking) {
+                            minutes = 25;
+                            statusDisplay.textContent = '工作時間（25分鐘）';
+                        } else {
+                            minutes = 5;
+                            statusDisplay.textContent = '休息時間（5分鐘）';
+                        }
+                        seconds = 0;
+                        updateDisplay();
+                    } else {
+                        minutes--;
+                        seconds = 59;
+                    }
+                } else {
+                    seconds--;
+                }
+                updateDisplay();
+            }, 1000);
+            
+            startBtn.textContent = '暫停';
+        }
+        
+        function pauseTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            startBtn.textContent = '繼續';
+        }
+        
+        function resetTimer() {
+            clearInterval(timerInterval);
+            timerInterval = null;
+            startBtn.textContent = '開始';
+            isWorking = true;
+            minutes = 25;
+            seconds = 0;
+            statusDisplay.textContent = '工作時間（25分鐘）';
+            updateDisplay();
+        }
+        
+        startBtn.addEventListener('click', () => {
+            if (timerInterval) {
+                pauseTimer();
+            } else {
+                startTimer();
+            }
+        });
+        
+        resetBtn.addEventListener('click', resetTimer);
+        
+        // 初始化顯示
+        updateDisplay();
+        
+        // === 任務清單部分 ===
+        const taskInput = document.getElementById('taskInput');
+        const taskList = document.getElementById('taskList');
+        
+        // 載入先前儲存的任務
+        function loadTasks() {
+            const saved = localStorage.getItem('tasks');
+            if (saved) {
+                taskList.innerHTML = saved;
+            }
+        }
+        
+        // 儲存任務
+        function saveTasks() {
+            localStorage.setItem('tasks', taskList.innerHTML);
+        }
+        
+        // 新增任務
+        taskInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && taskInput.value.trim() !== '') {
+                const li = document.createElement('li');
+                li.textContent = taskInput.value;
+                li.style.cursor = 'pointer';
+                li.addEventListener('click', () => {
+                    li.style.textDecoration = li.style.textDecoration === 'line-through' ? '' : 'line-through';
+                    saveTasks();
+                });
+                taskList.appendChild(li);
+                taskInput.value = '';
+                saveTasks();
+            }
+        });
+        
+        // 點擊任務標記完成
+        taskList.addEventListener('click', (e) => {
+            if (e.target.tagName === 'LI') {
+                e.target.style.textDecoration = 
+                    e.target.style.textDecoration === 'line-through' ? '' : 'line-through';
+                saveTasks();
+            }
+        });
+        
+        loadTasks();  // 頁面載入時讀取任務
+    </script>
 </body>
 </html>
