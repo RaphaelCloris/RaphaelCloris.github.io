@@ -3,134 +3,328 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>養寵物選擇器：小樹 or 電子雞</title>
+    <title>我的虛擬寵物世界 🏡🌱🐥🐠😺🐉 (有音效版！)</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background: linear-gradient(to bottom, #87CEEB, #E0F7FA); margin: 0; padding: 20px; min-height: 100vh; }
-        h1 { color: #2E8B57; }
-        button { padding: 15px 30px; font-size: 20px; margin: 20px; background: #4CAF50; color: white; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-        button:hover { background: #45a049; }
-        button:disabled { background: #cccccc; cursor: not-allowed; }
-        .section { display: none; margin: 50px auto; max-width: 600px; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: linear-gradient(to bottom, #87CEEB, #98FB98); min-height: 100vh; color: #333; }
+        nav { background: #4CAF50; padding: 15px; text-align: center; }
+        nav button { padding: 12px 25px; margin: 10px; background: white; color: #4CAF50; border: none; border-radius: 10px; cursor: pointer; font-size: 18px; font-weight: bold; }
+        nav button:hover { background: #E8F5E9; }
+        .section { display: none; padding: 30px; text-align: center; }
         .active { display: block; }
-        .pet { font-size: 120px; margin: 30px; }
-        p { font-size: 24px; color: #333; }
-        .status { font-size: 18px; color: #666; margin: 20px; }
+        .garden { display: flex; flex-wrap: wrap; justify-content: center; gap: 30px; margin-top: 20px; }
+        .pet-box { background: rgba(255,255,255,0.9); padding: 20px; border-radius: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); width: 220px; transition: transform 0.3s; }
+        .pet-box:hover { transform: translateY(-10px); }
+        .pet { font-size: 90px; cursor: pointer; margin: 10px; }
+        .pet-name { font-weight: bold; font-size: 20px; margin: 10px 0; }
+        .level { color: #FF9800; font-weight: bold; }
+        .bar { height: 12px; background: #ddd; border-radius: 6px; margin: 8px 0; overflow: hidden; }
+        .fill { height: 100%; border-radius: 6px; transition: width 0.5s; }
+        .happy { background: #4CAF50; }
+        .growth { background: #8BC34A; }
+        button.action { background: #2196F3; margin: 5px; }
+        button.action:hover { background: #1976D2; }
+        #coins { position: fixed; top: 80px; right: 20px; background: gold; color: black; padding: 10px 20px; border-radius: 50px; font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        #soundToggle { position: fixed; top: 80px; left: 20px; background: #FF9800; color: white; padding: 10px 20px; border-radius: 50px; cursor: pointer; }
+        #detail, #overlay { display: none; position: fixed; z-index: 100; }
+        #overlay { top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); }
+        #detail { top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 20px; max-width: 500px; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        .close-btn { background: #f44336; float: right; }
     </style>
 </head>
-<body>
-    <h1>歡迎來養寵物！🐾</h1>
-    <p>選擇你要養的：</p>
-    <button onclick="choose('tree')">養一棵小樹 🌱</button>
-    <button onclick="choose('chick')">養一隻電子雞 🐔</button>
+<body onload="init()">
+    <nav>
+        <button onclick="showSection('store'); playSound('click')">🛒 寵物商店</button>
+        <button onclick="showSection('home'); playSound('click')">🏡 家園</button>
+        <button onclick="showSection('park'); playSound('click')">🌳 公園</button>
+    </nav>
+    <div id="coins">金幣：0</div>
+    <div id="soundToggle" onclick="toggleSound()">🔊 音效開啟</div>
 
-    <!-- 養樹區 -->
-    <div id="treeSection" class="section">
-        <h2>我的小樹苗</h2>
-        <p>每天來澆水，讓樹長大吧！</p>
-        <div class="pet" id="treePet">🌱</div>
-        <p id="treeMessage">今天還沒澆水哦～</p>
-        <button id="waterBtn">澆水 💧</button>
-        <div class="status" id="treeDays">已澆水 0 天</div>
-        <button onclick="back()">回選擇</button>
+    <!-- 寵物商店 -->
+    <div id="store" class="section">
+        <h2>🛒 寵物商店</h2>
+        <p>用金幣解鎖新寵物！（每隻50金幣）</p>
+        <div id="shopItems"></div>
     </div>
 
-    <!-- 電子雞區 -->
-    <div id="chickSection" class="section">
-        <h2>我的電子雞</h2>
-        <p>照顧它，讓它開心！🐥</p>
-        <div class="pet" id="chickPet">🐥</div>
-        <p id="chickMessage">肚子餓了～</p>
-        <button onclick="action('feed')">餵食 🍎</button>
-        <button onclick="action('play')">玩耍 ⚽</button>
-        <button onclick="action('sleep')">睡覺 💤</button>
-        <div class="status" id="chickStatus">幸福度：50</div>
-        <button onclick="back()">回選擇</button>
+    <!-- 家園 -->
+    <div id="home" class="section active">
+        <h2>🏡 我的家園</h2>
+        <p>點擊寵物查看詳細資訊，互動讓它們成長！</p>
+        <div class="garden" id="homeGarden"></div>
     </div>
+
+    <!-- 公園 -->
+    <div id="park" class="section">
+        <h2>🌳 公園</h2>
+        <p>帶寵物來玩耍，增加幸福值！點它們玩～</p>
+        <div class="garden" id="parkGarden"></div>
+    </div>
+
+    <!-- 詳細面板 -->
+    <div id="overlay" onclick="closeDetail()"></div>
+    <div id="detail">
+        <button class="close-btn" onclick="closeDetail(); playSound('click')">✖</button>
+        <h2 id="detailName"></h2>
+        <div id="detailPet" style="font-size:120px;"></div>
+        <p id="detailDesc"></p>
+        <p id="detailLevel"></p>
+        <p id="detailStatus"></p>
+        <div id="detailActions"></div>
+    </div>
+
+    <!-- 音效檔案（免費公開資源） -->
+    <audio id="bgm" loop>
+        <source src="https://cdn.freesound.org/previews/612/612544_5674468-lq.ogg" type="audio/ogg">
+    </audio>
+    <audio id="sfxInteract">
+        <source src="https://cdn.freesound.org/previews/320/320605_5270808-lq.ogg" type="audio/ogg">
+    </audio>
+    <audio id="sfxUnlock">
+        <source src="https://cdn.freesound.org/previews/276/276325_5123856-lq.ogg" type="audio/ogg">
+    </audio>
+    <audio id="sfxVictory">
+        <source src="https://cdn.freesound.org/previews/657/657393_11148424-lq.ogg" type="audio/ogg">
+    </audio>
+    <audio id="sfxClick">
+        <source src="https://cdn.freesound.org/previews/919/91926_1021545-lq.ogg" type="audio/ogg">
+    </audio>
 
     <script>
-        function choose(type) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            if (type === 'tree') {
-                document.getElementById('treeSection').classList.add('active');
-                loadTree();
-            } else {
-                document.getElementById('chickSection').classList.add('active');
-                loadChick();
+        const petsData = {
+            tree: { name: "小樹苗", emoji: ["🌱","🌿","🌳","🌲","🌸"], growth: 0, unlocked: true, desc: "一棵需要陽光與愛的小樹。每天澆水，它會慢慢開花！" },
+            chick: { name: "電子雞", emoji: ["🐥","🐤","🐓","🐔"], happy: 50, unlocked: false, desc: "活潑的小雞，喜歡吃東西和玩耍。長大後會變成帥氣的公雞！" },
+            fish: { name: "小金魚", emoji: ["🐠","🐟","🐡","🌈🐟"], clean: 80, happy: 60, unlocked: false, desc: "優雅游泳的小魚，需要乾淨的水和食物。滿級會變成彩虹魚！" },
+            cat: { name: "小貓咪", emoji: ["😺","😸","😻","🐱"], happy: 50, unlocked: false, desc: "傲嬌又可愛的貓咪，最愛被撫摸和玩玩具。" },
+            dragon: { name: "神龍", emoji: ["🐉","🪸🐉","🔥🐉"], happy: 30, unlocked: false, desc: "傳說中的神龍！只有最用心照顧所有寵物的主人才會出現。會噴火保護你！" }
+        };
+
+        let coins = 0;
+        let lastVisit = '';
+        let soundEnabled = true;
+        const bgm = document.getElementById('bgm');
+        bgm.volume = 0.3;  // 背景音樂音量低一點
+
+        function init() {
+            loadGame();
+            dailyReward();
+            renderAll();
+            startAutoDecline();
+            showSection('home');
+            if (soundEnabled) bgm.play();
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            document.getElementById('soundToggle').textContent = soundEnabled ? '🔊 音效開啟' : '🔇 音效關閉';
+            if (soundEnabled) bgm.play();
+            else bgm.pause();
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            let sfxId;
+            if (type === 'interact') sfxId = 'sfxInteract';
+            else if (type === 'unlock') sfxId = 'sfxUnlock';
+            else if (type === 'victory') sfxId = 'sfxVictory';
+            else if (type === 'click') sfxId = 'sfxClick';
+            const sfx = document.getElementById(sfxId);
+            if (sfx) {
+                sfx.currentTime = 0;
+                sfx.play();
             }
         }
 
-        function back() {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        function renderAll() {
+            renderHome();
+            renderPark();
+            renderShop();
+            updateCoins();
         }
 
-        // === 養樹部分 ===
-        const treePets = ['🌱', '🌿', '🌳', '🪴'];
-        const treeMsgs = ['這是一顆小小的種子～', '發芽了！好可愛～', '樹變大了！繼續加油！', '哇！大樹長成了！謝謝你 🥰'];
+        function renderHome() {
+            const container = document.getElementById('homeGarden');
+            container.innerHTML = '';
+            Object.keys(petsData).forEach(key => {
+                const pet = petsData[key];
+                if (!pet.unlocked) return;
+                const level = Math.floor((pet.growth || pet.happy || 0) / 10);
+                const value = Math.min(100, pet.growth || pet.happy || pet.clean || 0);
+                const emoji = pet.emoji[Math.min(level, pet.emoji.length - 1)];
+                const box = document.createElement('div');
+                box.className = 'pet-box';
+                box.innerHTML = `
+                    <div class="pet" onclick="openDetail('${key}'); playSound('click')">${emoji}</div>
+                    <div class="pet-name">${pet.name}</div>
+                    <div class="level">Lv. ${level}</div>
+                    <div class="bar"><div class="fill ${pet.growth ? 'growth' : 'happy'}" style="width:${value}%"></div></div>
+                    <button class="action" onclick="interact('${key}')">互動 ❤️</button>
+                `;
+                container.appendChild(box);
+            });
+            checkDragonUnlock();
+        }
 
-        function getToday() { return new Date().toISOString().slice(0, 10); }
+        function renderPark() {
+            const container = document.getElementById('parkGarden');
+            container.innerHTML = '';
+            Object.keys(petsData).filter(k => petsData[k].unlocked).forEach(key => {
+                const pet = petsData[key];
+                const emoji = pet.emoji[0];
+                const div = document.createElement('div');
+                div.className = 'pet-box';
+                div.innerHTML = `<div class="pet" onclick="playInPark('${key}')">${emoji}</div><p>${pet.name}</p>`;
+                container.appendChild(div);
+            });
+        }
 
-        function loadTree() {
-            let count = parseInt(localStorage.getItem('treeCount') || '0');
-            let lastDate = localStorage.getItem('treeLast') || '';
-            const today = getToday();
-            const stage = Math.min(count, 3);
+        function renderShop() {
+            const container = document.getElementById('shopItems');
+            container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">';
+            Object.keys(petsData).forEach(key => {
+                const pet = petsData[key];
+                if (pet.unlocked || key === 'dragon') return;
+                const item = document.createElement('div');
+                item.className = 'pet-box';
+                item.innerHTML = `
+                    <div class="pet">${pet.emoji[0]}</div>
+                    <p><strong>${pet.name}</strong></p>
+                    <button ${coins >= 50 ? '' : 'disabled'} onclick="buyPet('${key}')">
+                        解鎖 (50金幣)
+                    </button>
+                `;
+                container.appendChild(item);
+            });
+            container.innerHTML += '</div>';
+        }
 
-            document.getElementById('treePet').textContent = treePets[stage];
-            document.getElementById('treeDays').textContent = `已澆水 ${count} 天`;
-            const waterBtn = document.getElementById('waterBtn');
+        function interact(key) {
+            const pet = petsData[key];
+            const add = 10;
+            if (pet.growth !== undefined) pet.growth = Math.min(100, pet.growth + add);
+            if (pet.happy !== undefined) pet.happy = Math.min(100, pet.happy + add);
+            if (pet.clean !== undefined) pet.clean = Math.min(100, pet.clean + 5);
+            coins += 5;
+            playSound('interact');
+            renderAll();
+            saveGame();
+        }
 
-            if (lastDate === today) {
-                document.getElementById('treeMessage').textContent = '明天再來澆水哦！';
-                waterBtn.disabled = true;
-                waterBtn.textContent = '今天已澆水 ✅';
-            } else {
-                document.getElementById('treeMessage').textContent = treeMsgs[stage];
-                waterBtn.disabled = false;
-                waterBtn.textContent = '澆水 💧';
+        function playInPark(key) {
+            interact(key);
+            playSound('interact');
+            alert(`${petsData[key].name} 在公園玩得很開心！幸福值 +10 ✨`);
+        }
+
+        function buyPet(key) {
+            if (coins >= 50) {
+                coins -= 50;
+                petsData[key].unlocked = true;
+                playSound('unlock');
+                renderAll();
+                saveGame();
+                alert(`成功解鎖 ${petsData[key].name}！`);
             }
+        }
 
-            waterBtn.onclick = () => {
-                if (lastDate === today) return;
-                count++;
-                localStorage.setItem('treeCount', count);
-                localStorage.setItem('treeLast', today);
-                loadTree();  // 刷新
+        function openDetail(key) {
+            const pet = petsData[key];
+            const value = pet.growth || pet.happy || 0;
+            const level = Math.floor(value / 10);
+            document.getElementById('detailName').textContent = `${pet.name} (Lv. ${level})`;
+            document.getElementById('detailPet').textContent = pet.emoji[Math.min(level, pet.emoji.length - 1)];
+            document.getElementById('detailDesc').textContent = pet.desc;
+            document.getElementById('detailLevel').textContent = `進度：${value}/100 (滿級10級)`;
+            document.getElementById('detailStatus').textContent = pet.growth ? `成長值：${pet.growth}` : `幸福值：${pet.happy}`;
+            document.getElementById('detailActions').innerHTML = `
+                <button class="action" onclick="interact('${key}'); closeDetail();">互動 +10</button>
+            `;
+            document.getElementById('overlay').style.display = 'block';
+            document.getElementById('detail').style.display = 'block';
+        }
+
+        function closeDetail() {
+            playSound('click');
+            document.getElementById('overlay').style.display = 'none';
+            document.getElementById('detail').style.display = 'none';
+        }
+
+        function checkDragonUnlock() {
+            const basics = ['tree','chick','fish','cat'];
+            const allMax = basics.every(k => {
+                const pet = petsData[k];
+                const val = pet.growth || pet.happy || 0;
+                return val >= 100;
+            });
+            if (allMax && !petsData.dragon.unlocked) {
+                petsData.dragon.unlocked = true;
+                playSound('victory');
+                alert('🎉 恭喜！所有寵物滿級，神龍出現了！🐉');
+                renderAll();
+                saveGame();
+            }
+        }
+
+        function dailyReward() {
+            const today = new Date().toISOString().slice(0,10);
+            if (lastVisit !== today) {
+                coins += 20;
+                lastVisit = today;
+                playSound('unlock');
+                alert('每日登入獎勵：+20金幣！');
+                saveGame();
+                updateCoins();
+            }
+        }
+
+        function startAutoDecline() {
+            setInterval(() => {
+                Object.keys(petsData).forEach(key => {
+                    const pet = petsData[key];
+                    if (!pet.unlocked) return;
+                    if (pet.happy !== undefined) pet.happy = Math.max(0, pet.happy - 1);
+                    if (pet.clean !== undefined) pet.clean = Math.max(0, pet.clean - 2);
+                });
+                renderAll();
+                saveGame();
+            }, 60000); // 每分鐘下降一點
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function updateCoins() {
+            document.getElementById('coins').textContent = `金幣：${coins}`;
+        }
+
+        function saveGame() {
+            const save = {
+                coins, lastVisit,
+                pets: Object.fromEntries(Object.entries(petsData).map(([k,v]) => [k, {
+                    growth: v.growth, happy: v.happy, clean: v.clean, unlocked: v.unlocked
+                }]))
             };
+            localStorage.setItem('petWorldSave', JSON.stringify(save));
         }
 
-        // === 電子雞部分 ===
-        const chickPets = ['🐥', '🐤', '🐔', '🥚'];  // 正常、開心、生氣、離開（如果太低）
-        let happiness = 50;
-
-        function loadChick() {
-            happiness = parseInt(localStorage.getItem('chickHappy') || '50');
-            updateChick();
-        }
-
-        function updateChick() {
-            const pet = document.getElementById('chickPet');
-            const msg = document.getElementById('chickMessage');
-            const status = document.getElementById('chickStatus');
-
-            if (happiness > 80) { pet.textContent = '🐤'; msg.textContent = '超開心！謝謝主人～❤️'; }
-            else if (happiness > 50) { pet.textContent = '🐥'; msg.textContent = '心情不錯！'; }
-            else if (happiness > 20) { pet.textContent = '🐔'; msg.textContent = '有點不爽…快來陪我！'; }
-            else { pet.textContent = '🥚'; msg.textContent = '它生氣離開了…重新開始吧 😢'; happiness = 50; }
-
-            status.textContent = `幸福度：${happiness}`;
-            localStorage.setItem('chickHappy', happiness);
-        }
-
-        function action(type) {
-            if (type === 'feed') happiness = Math.min(100, happiness + 20);
-            if (type === 'play') happiness = Math.min(100, happiness + 15);
-            if (type === 'sleep') happiness = Math.min(100, happiness + 10);
-            if (happiness <= 20) happiness = 50;  // 重置
-            updateChick();
+        function loadGame() {
+            const saved = localStorage.getItem('petWorldSave');
+            if (saved) {
+                const data = JSON.parse(saved);
+                coins = data.coins || 0;
+                lastVisit = data.lastVisit || '';
+                if (data.pets) {
+                    Object.keys(data.pets).forEach(k => {
+                        if (petsData[k]) {
+                            Object.assign(petsData[k], data.pets[k]);
+                        }
+                    });
+                }
+            }
         }
     </script>
 </body>
 </html>
-    </script>
-</body>
 </html>
