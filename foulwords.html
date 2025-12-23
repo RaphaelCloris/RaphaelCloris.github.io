@@ -42,14 +42,12 @@
         }
         .status { font-size: 0.9em; color: #0f0; }
 
-        /* 聊天區 - 修正背景圖 */
+        /* 聊天區 - 純綠色背景 */
         #chatContainer {
             flex: 1;
             overflow-y: auto;
             padding: 20px 10px;
-            background: url('https://raw.githubusercontent.com/abdurrahmanekr/random/master/whatsapp-bg.png') repeat;
-            background-size: auto;
-            background-color: #0e1f17; /* 備用底色，載入慢時也有感覺 */
+            background: #0a3622; /* 經典深綠聊天背景 */
         }
         .message {
             margin: 15px 10px;
@@ -63,6 +61,341 @@
             padding: 14px 20px;
             border-radius: 20px;
             font-size: 1.5em;
+            line-height: 1.6;
+            position: relative;
+        }
+        .scolder .bubble {
+            background: #ff3366;
+            color: white;
+            border-bottom-left-radius: 5px;
+        }
+        .user .bubble {
+            background: #0088ff;
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        /* 時間戳 + 已讀 */
+        .meta {
+            font-size: 0.8em;
+            color: #ccc;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+        }
+        .message.scolder .meta { justify-content: flex-start; }
+        .read-mark {
+            margin-left: 8px;
+            font-size: 1em;
+        }
+        .user .read-mark { color: #4fc3f7; } /* 藍色雙勾 */
+
+        /* 快速回覆 */
+        #quickReplies {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 15px;
+            background: #1c1c1c;
+            justify-content: center;
+        }
+        .replyBtn {
+            padding: 12px 20px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .replyBtn:hover {
+            background: #555;
+            transform: translateY(-3px);
+        }
+
+        /* 開始畫面 */
+        #startScreen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a0033, #330066);
+        }
+        #startScreen h1 {
+            font-size: 3.5em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 20px #ff00ff;
+        }
+        #scoldForm {
+            background: rgba(255,255,255,0.1);
+            padding: 40px;
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            width: 90%;
+            max-width: 500px;
+        }
+        select {
+            width: 100%;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 15px;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 1.3em;
+        }
+        button#startBtn {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.8em;
+            background: #ff0066;
+            border: none;
+            border-radius: 20px;
+            color: white;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        audio { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- 開始畫面 -->
+    <div id="startScreen">
+        <h1>好想被罵 😈</h1>
+        <p style="font-size:1.5em;margin-bottom:30px;color:#ff99ff;">通訊軟體版 · 純綠背景 + 時間戳 + 已讀</p>
+        <form id="scoldForm">
+            <select id="job" required>
+                <option value="">你的職業是？</option>
+                <option value="學生">學生</option>
+                <option value="上班族">上班族</option>
+                <option value="自由業者">自由業者</option>
+                <option value="老闆">老闆</option>
+                <option value="無業遊民">無業遊民</option>
+                <option value="其他">其他</option>
+            </select>
+            <select id="scolder" required>
+                <option value="">想被誰罵？</option>
+                <option value="媽媽">媽媽</option>
+                <option value="老闆">老闆</option>
+                <option value="前任">前任</option>
+                <option value="老師">老師</option>
+                <option value="網友">網友</option>
+            </select>
+            <button type="submit" id="startBtn">開始聊天（被罵）</button>
+        </form>
+    </div>
+
+    <!-- 聊天介面 -->
+    <div id="chatInterface" style="display:none;flex-direction:column;height:100vh;">
+        <div class="header">
+            <div class="avatar"></div>
+            <span id="scolderName">媽媽</span>
+            <div class="status" id="status">線上</div>
+        </div>
+        <div id="chatContainer"></div>
+        <div id="quickReplies"></div>
+    </div>
+
+    <!-- 音效 -->
+    <audio id="sendSound" src="https://cdn.freesound.org/previews/612/612610_5674468-lq.mp3" preload="auto"></audio>
+    <audio id="receiveSound" src="https://cdn.freesound.org/previews/522/522262_10387714-lq.mp3" preload="auto"></audio>
+
+    <script>
+        // 完整 30 種第一輪專屬罵句
+        const firstScolds = {
+            "學生_媽媽": "媽媽看你這個學生還在睡到中午才起床，氣到想拿掃把打你：讀書讀成這樣？整天滑手機打遊戲，考試永遠倒數，媽當年生你下來不是讓你當廢物的！快給我用功，不然別想拿零用錢！",
+            "學生_老闆": "老闆看你這個學生來打工：動作慢吞吞、老是滑手機、找錢還找錯！你這種學生出來社會絕對被踩死，建議直接退學回家躺平比較實際！",
+            "學生_前任": "前任回想跟你這個學生交往時：天天約會遲到、錢都我付、還只會撒嬌？你這種學生男友/女友就是極品爛貨，分手真的是我最正確的決定！",
+            "學生_老師": "老師看著你這個學生搖頭：上課睡覺、作業抄襲、考試作弊還被抓包！你這種學生就是班上的毒瘤，畢業後絕對沒出息，別再丟我的臉了！",
+            "學生_網友": "網友看到你這個學生po日常：整天打遊戲炫耀垃圾成績？哈哈哈這種學生出來社會只有當社畜的份，樓主廢到家了，建議直接輟學！",
+
+            "上班族_媽媽": "媽媽聽你這個上班族抱怨加班：加班？那是因為你能力差！人家上班族都升職加薪了，你還在底層領死薪水，天天回家只會喊累，沒用東西！",
+            "上班族_老闆": "老闆直接開噴你這個上班族：報告永遠拖拉、開會滑手機、請假比誰都多！你這種上班族就是公司毒瘤，繼續這樣下個月直接資遣！",
+            "上班族_前任": "前任冷笑：跟你這個上班族分手後我才發現自由！天天加班沒空陪我、薪水低到付不起約會錢，你這種上班族誰敢嫁/娶啊？",
+            "上班族_老師": "老師聽到你現在是上班族：當年就知道你會變成社畜！讀書不用功，現在被老闆壓榨活該，廢物一個！",
+            "上班族_網友": "網友看到你上班族po打卡照：朝九晚五還敢抱怨？這種上班族最沒資格喊累，建議直接辭職回家吃爸媽！",
+
+            "自由業者_媽媽": "媽媽聽你說自己是自由業者：自由？根本是無業遊民！天天睡到下午、收入不穩定，還敢說在追夢？追個屁！快去找正經工作！",
+            "自由業者_老闆": "老闆（前客戶）看你自由業者：接案永遠延遲、品質爛到爆、還老是漲價？你這種自由業者遲早餓死，業界都把你拉黑了！",
+            "自由業者_前任": "前任翻白眼：跟你這個自由業者交往時，天天在家耍廢、沒穩定收入約會都AA，你這種人單身一輩子剛好！",
+            "自由業者_老師": "老師嘆氣：當年你就愛拖拖拉拉，現在自由業者果然不意外，收入不穩活該窮一輩子！",
+            "自由業者_網友": "網友噴你：自由業者？笑死，根本在家摸魚黨！這種人還敢po靈感文，建議直接去領救濟金！",
+
+            "老闆_媽媽": "媽媽聽你說自己是老闆：老闆？員工都跑光了吧！你這種老闆只會壓榨員工，自己卻不會賺錢，公司遲早倒閉！",
+            "老闆_老闆": "同業老闆嘲笑你：你這種老闆還敢開公司？管理亂七八糟、員工怨聲載道，生意遲早被我搶光！",
+            "老闆_前任": "前任冷笑：跟你這個老闆交往時，天天忙到沒空陪我，還老愛炫富？你這種老闆註定孤獨終老！",
+            "老闆_老師": "老師搖頭：當年你就愛裝大尾，現在當老闆果然驕傲自大，公司撐不過三年！",
+            "老闆_網友": "網友出征：這種老闆最可惡！壓榨員工還po成功學，建議直接倒閉讓員工解脫！",
+
+            "無業遊民_媽媽": "媽媽氣到想斷絕關係：你這個無業遊民天天在家吃我的用我的，還敢說在找工作？找個屁！快給我滾出去！",
+            "無業遊民_老闆": "老闆看你履歷：無業遊民？直接丟垃圾桶！你這種人來面試就是浪費我時間！",
+            "無業遊民_前任": "前任慶幸分手：幸好沒跟你這個無業遊民結婚，不然現在要養你一輩子，太可怕了！",
+            "無業遊民_老師": "老師失望透頂：當年就知道你會變成無業遊民，讀書不用功，現在社會邊緣人！",
+            "無業遊民_網友": "網友狂噴：無業遊民還敢po日常？在家耍廢黨滾粗啦，社會不需要你這種寄生蟲！",
+
+            "其他_媽媽": "媽媽聽你說自己是其他：其他？根本找不到分類的廢物！不管做什麼都做不好，媽真的對你絕望了！",
+            "其他_老闆": "老闆直接拒絕：你這種其他類型的員工我不要！履歷亂七八糟，能力也不知道在哪！",
+            "其他_前任": "前任後悔：當初怎麼會看上你這種其他？什麼都不行，還自以為很特別，滾啦！",
+            "其他_老師": "老師嘆氣：你這種其他學生當年就最麻煩，什麼都不專精，現在果然廢到不行！",
+            "其他_網友": "網友鍵盤俠模式全開：其他？哈哈哈連分類都找不到的極品廢物，建議直接消失！"
+        };
+
+        // 追加罵句
+        const followUpScolds = {
+            "不服氣": "還不服氣？找死啊你這個{job}！{scolder}今天心情超差，正好拿你出氣，噴到你崩潰！",
+            "求饒": "求饒？跪下叫奶奶都沒用！你這個{job}活該被罵，繼續給我閉嘴聽著！",
+            "嘴硬": "還嘴硬？好啊！{scolder}直接開大絕，噴你這個{job}到你刪帳號！",
+            "自嘲": "自嘲？裝可憐？{scolder}才不吃這套！你這個{job}就是天生廢物，認了吧垃圾！",
+            "哭": "哭了？哭得好！繼續哭，{scolder}就是要罵到你這個{job}哭不停！",
+            "挑釁": "挑釁我？恭喜你成功激怒{scolder}，現在噴你到關機為止！",
+            "認錯": "認錯了？太晚啦！你這個{job}註定被{scolder}罵一整天，享受吧！",
+            "逃跑": "想逃？門都沒有！{scolder}追到天涯海角也要把你這個{job}罵醒！"
+        };
+
+        // 快速回覆選項池
+        const quickRepliesPool = [
+            "不服氣啊？有種再說",
+            "好啦我錯了別罵了",
+            "你能再狠一點嗎？",
+            "哈哈我就是廢物啦",
+            "嗚嗚我哭了",
+            "來啊互相傷害啊",
+            "對不起我真的錯了",
+            "我跑了掰掰"
+        ];
+
+        const chatContainer = document.getElementById('chatContainer');
+        const quickReplies = document.getElementById('quickReplies');
+        const scolderNameSpan = document.getElementById('scolderName');
+        const status = document.getElementById('status');
+        const sendSound = document.getElementById('sendSound');
+        const receiveSound = document.getElementById('receiveSound');
+
+        let currentJob = "";
+        let currentScolder = "";
+
+        function getTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function addMessage(text, sender) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = text;
+
+            const meta = document.createElement('div');
+            meta.className = 'meta';
+            meta.textContent = getTime();
+            if (sender === 'user') {
+                const read = document.createElement('span');
+                read.className = 'read-mark';
+                read.textContent = ' ✓✓';
+                meta.appendChild(read);
+            }
+
+            msgDiv.appendChild(bubble);
+            msgDiv.appendChild(meta);
+            chatContainer.appendChild(msgDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function typeMessage(text, sender, callback) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender}`;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            bubble.textContent = '';
+
+            const meta = document.createElement('div');
+            meta.className = 'meta';
+            meta.textContent = getTime();
+
+            msgDiv.appendChild(bubble);
+            msgDiv.appendChild(meta);
+            chatContainer.appendChild(msgDiv);
+
+            status.textContent = "正在輸入...";
+            receiveSound.play().catch(() => {});
+
+            let i = 0;
+            const interval = setInterval(() => {
+                if (i < text.length) {
+                    bubble.textContent += text.charAt(i);
+                    i++;
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                } else {
+                    clearInterval(interval);
+                    status.textContent = "線上";
+                    if (callback) callback();
+                }
+            }, 60);
+        }
+
+        function showQuickReplies() {
+            quickReplies.innerHTML = '';
+            const shuffled = [...quickRepliesPool].sort(() => 0.5 - Math.random());
+            shuffled.slice(0, 3).forEach(text => {
+                const btn = document.createElement('button');
+                btn.className = 'replyBtn';
+                btn.textContent = text;
+                btn.onclick = () => userReply(text);
+                quickReplies.appendChild(btn);
+            });
+        }
+
+        function userReply(text) {
+            addMessage(text, 'user');
+            sendSound.play().catch(() => {});
+            quickReplies.innerHTML = '';
+            status.textContent = "正在輸入...";
+
+            setTimeout(() => {
+                let attitude = "嘴硬";
+                if (text.includes("不服氣") || text.includes("有種")) attitude = "不服氣";
+                else if (text.includes("錯了") || text.includes("對不起")) attitude = "求饒";
+                else if (text.includes("狠") || text.includes("互相") || text.includes("來啊")) attitude = "嘴硬";
+                else if (text.includes("廢物")) attitude = "自嘲";
+                else if (text.includes("哭")) attitude = "哭";
+                else if (text.includes("挑釁")) attitude = "挑釁";
+                else if (text.includes("認錯")) attitude = "認錯";
+                else if (text.includes("跑") || text.includes("掰掰")) attitude = "逃跑";
+
+                let reply = followUpScolds[attitude];
+                reply = reply.replace(/{job}/g, currentJob).replace(/{scolder}/g, currentScolder);
+
+                typeMessage(reply, 'scolder', showQuickReplies);
+            }, 1200 + Math.random() * 1000);
+        }
+
+        document.getElementById('scoldForm').addEventListener('submit', e => {
+            e.preventDefault();
+            currentJob = document.getElementById('job').value;
+            currentScolder = document.getElementById('scolder').value;
+
+            if (!currentJob || !currentScolder) return;
+
+            scolderNameSpan.textContent = currentScolder;
+            const key = `${currentJob}_${currentScolder}`;
+            const firstMsg = firstScolds[key] || "廢物！你誰啊？滾！";
+
+            document.getElementById('startScreen').style.display = 'none';
+            document.getElementById('chatInterface').style.display = 'flex';
+
+            setTimeout(() => {
+                typeMessage(firstMsg, 'scolder', showQuickReplies);
+            }, 800);
+        });
+    </script>
+</body>
+</html>            font-size: 1.5em;
             line-height: 1.6;
             position: relative;
         }
