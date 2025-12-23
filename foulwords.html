@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>好想被罵 - LINE 風格 + 貼圖版</title>
+    <title>好想被罵 - LINE 風格 + 顏文字版</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Microsoft JhengHei', sans-serif;
@@ -16,7 +16,6 @@
             color: #333;
             overflow: hidden;
         }
-        /* LINE 頂部欄 */
         .header {
             background: #00b900;
             color: white;
@@ -46,7 +45,6 @@
             vertical-align: middle;
             margin-right: 12px;
         }
-        /* 聊天區 */
         #chatContainer {
             flex: 1;
             overflow-y: auto;
@@ -79,11 +77,12 @@
             color: #333;
             border-bottom-right-radius: 5px;
         }
-        .sticker {
-            width: 180px;
-            height: auto;
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        /* 大尺寸顏文字，模擬貼圖 */
+        .emoji-sticker {
+            font-size: 4em;
+            line-height: 1;
+            text-align: center;
+            padding: 10px;
         }
         .meta {
             font-size: 0.8em;
@@ -102,72 +101,38 @@
             color: #666;
             font-size: 0.9em;
         }
-        /* 底部輸入區 */
         #bottomBar {
             display: flex;
             align-items: center;
             padding: 8px 12px;
             background: white;
             border-top: 1px solid #ddd;
-            position: relative;
         }
         #quickReplies {
             flex: 1;
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 10px;
             justify-content: center;
         }
         .replyBtn {
-            padding: 10px 18px;
+            padding: 12px 18px;
             background: #f0f0f0;
             color: #333;
             border: 1px solid #ddd;
             border-radius: 20px;
-            font-size: 1.2em;
+            font-size: 1.3em;
             cursor: pointer;
+            min-width: 60px;
+            text-align: center;
+        }
+        .replyBtn.emoji {
+            font-size: 2em;
+            padding: 8px 12px;
         }
         .replyBtn:hover {
             background: #e0e0e0;
         }
-        #stickerBtn {
-            width: 50px;
-            height: 50px;
-            background: url('https://stickershop.line-scdn.net/stickershop/v1/product/1001/thumbnail@2x.png') center/cover;
-            border-radius: 10px;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-        /* 貼圖選擇面板 */
-        #stickerPanel {
-            position: fixed;
-            bottom: 70px;
-            left: 0;
-            right: 0;
-            background: white;
-            padding: 15px;
-            display: none;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 15px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.2);
-            max-height: 40vh;
-            overflow-y: auto;
-            border-top-left-radius: 20px;
-            border-top-right-radius: 20px;
-        }
-        .stickerOption {
-            width: 100px;
-            height: 100px;
-            object-fit: contain;
-            cursor: pointer;
-            border-radius: 10px;
-            transition: transform 0.2s;
-        }
-        .stickerOption:hover {
-            transform: scale(1.2);
-        }
-        /* 開始畫面 */
         #startScreen {
             flex: 1;
             display: flex;
@@ -215,10 +180,9 @@
     </style>
 </head>
 <body>
-    <!-- 開始畫面 -->
     <div id="startScreen">
         <h1>好想被罵 😈</h1>
-        <p style="font-size:1.5em;margin-bottom:30px;">LINE 風格 + 貼圖版 · 發貼圖也會被罵</p>
+        <p style="font-size:1.5em;margin-bottom:30px;">LINE 風格 + 顏文字版 · 發顏文字也會被罵</p>
         <form id="scoldForm">
             <select id="job" required>
                 <option value="">你的職業是？</option>
@@ -241,7 +205,6 @@
         </form>
     </div>
 
-    <!-- LINE 聊天介面 -->
     <div id="chatInterface" style="display:none;flex-direction:column;height:100vh;">
         <div class="header">
             <button class="backBtn" aria-label="重新開始">←</button>
@@ -251,26 +214,14 @@
         <div id="chatContainer"></div>
         <div id="bottomBar">
             <div id="quickReplies"></div>
-            <div id="stickerBtn" title="貼圖" aria-label="開啟貼圖"></div>
         </div>
     </div>
 
-    <!-- 貼圖面板 -->
-    <div id="stickerPanel">
-        <img class="stickerOption" src="https://stickershop.line-scdn.net/stickershop/v1/sticker/1003/android/sticker.png;compress=true" alt="熊大生氣">
-        <img class="stickerOption" src="https://stickershop.line-scdn.net/stickershop/v1/sticker/1005/android/sticker.png;compress=true" alt="兔兔翻白眼">
-        <img class="stickerOption" src="https://stickershop.line-scdn.net/stickershop/v1/sticker/1015/android/sticker.png;compress=true" alt="饅頭人哭哭">
-        <img class="stickerOption" src="https://stickershop.line-scdn.net/stickershop/v1/sticker/1008/android/sticker.png;compress=true" alt="熊大笑死">
-        <img class="stickerOption" src="https://stickershop.line-scdn.net/stickershop/v1/sticker/1021/android/sticker.png;compress=true" alt="兔兔生氣">
-        <img class="stickerOption" src="https://stickershop.line-scdn.net/stickershop/v1/sticker/1018/android/sticker.png;compress=true" alt="饅頭人挑釁">
-    </div>
-
-    <!-- 音效 -->
     <audio id="sendSound" src="https://cdn.freesound.org/previews/612/612610_5674468-lq.mp3" preload="auto"></audio>
     <audio id="receiveSound" src="https://cdn.freesound.org/previews/522/522262_10387714-lq.mp3" preload="auto"></audio>
 
     <script>
-        // 完整 30 種第一輪專屬罵句
+        // 第一輪開場罵句（保持不變）
         const firstScolds = {
             "學生_媽媽": "媽媽看你這個學生還在睡到中午才起床，氣到想拿掃把打你：讀書讀成這樣？整天滑手機打遊戲，考試永遠倒數，媽當年生你下來不是讓你當廢物的！快給我用功，不然別想拿零用錢！",
             "學生_老闆": "老闆看你這個學生來打工：動作慢吞吞、老是滑手機、找錢還找錯！你這種學生出來社會絕對被踩死，建議直接退學回家躺平比較實際！",
@@ -304,20 +255,78 @@
             "其他_網友": "網友鍵盤俠模式全開：其他？哈哈哈連分類都找不到的極品廢物，建議直接消失！"
         };
 
-        // 追加罵句
-        const followUpScolds = {
-            "不服氣": "還不服氣？找死啊你這個{job}！{scolder}今天心情超差，正好拿你出氣，噴到你崩潰！",
-            "求饒": "求饒？跪下叫奶奶都沒用！你這個{job}活該被罵，繼續給我閉嘴聽著！",
-            "嘴硬": "還嘴硬？好啊！{scolder}直接開大絕，噴你這個{job}到你刪帳號！",
-            "自嘲": "自嘲？裝可憐？{scolder}才不吃這套！你這個{job}就是天生廢物，認了吧垃圾！",
-            "哭": "哭了？哭得好！繼續哭，{scolder}就是要罵到你這個{job}哭不停！",
-            "挑釁": "挑釁我？恭喜你成功激怒{scolder}，現在噴你到關機為止！",
-            "認錯": "認錯了？太晚啦！你這個{job}註定被{scolder}罵一整天，享受吧！",
-            "逃跑": "想逃？門都沒有！{scolder}追到天涯海角也要把你這個{job}罵醒！",
-            "貼圖": "發貼圖？想用可愛貼圖轉移話題？你這個{job}以為{scolder}會被騙？更氣了！繼續噴你到你不敢再發！"
+        // 每個職業的追加回應（包含顏文字專屬回應）
+        const jobResponses = {
+            "學生": {
+                "不服氣": "{scolder}聽你這學生還敢不服？考試永遠吊車尾還敢頂嘴？給我回去寫十遍檢討書，不然別想吃晚飯！",
+                "求饒": "求饒？現在知道怕了？當初叫你讀書你裝聾，現在被罵才知道錯？晚了！繼續罰抄課本！",
+                "嘴硬": "嘴硬是吧？好啊！{scolder}直接打電話給你導師，說你態度惡劣，讓你留級試試看！",
+                "自嘲": "自嘲自己是廢物？終於有自知之明了？但這還不夠，給我把大學聯考模擬考重寫到滿分為止！",
+                "哭": "哭了？哭有什麼用！當年叫你別打遊戲你不聽，現在哭給誰看？哭完給我去跑操場十圈！",
+                "挑釁": "挑釁我？學生膽子肥了是吧？{scolder}直接沒收你手機一個月，看你還敢不敢囂張！",
+                "認錯": "認錯了？口說無憑！明天交一萬字悔過書，少一個字就加罰一天零用錢！",
+                "逃跑": "想跑？門都沒有！{scolder}把你房門鎖死，看你這學生能逃到哪去！",
+                "顏文字": "發顏文字想裝可愛博同情？你這學生以為這樣就能逃課？更氣了！現在給我跪橡皮擦反省！"
+            },
+            "上班族": {
+                "不服氣": "上班族還不服氣？加班是因為你效率差！繼續不服，下個月績效直接打零！",
+                "求饒": "求饒？現在知道怕了？報告拖拉成這樣，早該被開除！給我周末主動加班補回來！",
+                "嘴硬": "嘴還硬？好！{scolder}直接把你這月的獎金全扣，看你還硬不硬得起來！",
+                "自嘲": "自嘲自己是社畜？恭喜你終於認清現實了，但這還不夠，給我把提案重做十遍！",
+                "哭": "哭什麼哭？上班族誰不累？你這點抗壓性還想升職？哭完馬上回去改企劃！",
+                "挑釁": "敢挑釁？上班族膽子不小啊！{scolder}直接把你調去最偏的部門，看你還敢不敢！",
+                "認錯": "認錯了？那就證明給我看！下周提案你要負責主講，講不好就自己辭職！",
+                "逃跑": "想翹班逃跑？門都沒有！{scolder}直接在群組@你，讓全公司知道你這上班族多沒擔當！",
+                "顏文字": "發顏文字想緩和氣氛？上班族還玩這套？你以為這樣就能少做報告？更火大！現在給我寫三千字檢討！"
+            },
+            "自由業者": {
+                "不服氣": "自由業者還不服？案子永遠延期還敢頂嘴？客戶都跑光了你還不服？",
+                "求饒": "求饒了？現在知道慌了？收入不穩還敢拖稿，早該餓肚子反省了！",
+                "嘴硬": "嘴硬？好啊！{scolder}直接在業界群組說你不靠譜，看你還有沒有案子接！",
+                "自嘲": "自嘲自己在摸魚？至少還有點自知之明，但這不夠，給我把積壓的案子全部清完！",
+                "哭": "哭了？收入歸零的時候怎麼不哭？現在哭也沒錢進帳，趕快去接案啦廢物！",
+                "挑釁": "挑釁我？自由業者時間多是吧？{scolder}直接把你拉黑，看你怎麼活！",
+                "認錯": "認錯了？那就用行動證明！下個案子免費幫我做，不然別想再合作！",
+                "逃跑": "想逃？自由業者跑得了和尚跑不了廟！{scolder}追到你社群帳號繼續噴！",
+                "顏文字": "發顏文字賣萌？自由業者還這麼幼稚？以為可愛就能掩蓋拖延症？更生氣，給我24小時內交稿！"
+            },
+            "老闆": {
+                "不服氣": "老闆還不服氣？公司都快倒了你還敢頂嘴？員工跑光怪誰？",
+                "求饒": "求饒？現在知道怕了？當初壓榨員工的時候怎麼不怕？活該虧本！",
+                "嘴硬": "嘴硬？好！{scolder}直接把你公司負評刷爆，讓你生意更慘！",
+                "自嘲": "自嘲自己是血汗老闆？終於承認了？但這還不夠，給員工加薪道歉，不然倒閉剛好！",
+                "哭": "哭了？公司虧錢的時候怎麼不哭？現在哭也救不回員工的心！",
+                "挑釁": "老闆還敢挑釁？{scolder}直接發文呼籲大家杯葛你公司，看你怎麼營業！",
+                "認錯": "認錯了？那就證明！立刻給員工調薪50%，不然別想翻身！",
+                "逃跑": "想跑？老闆跑得了責任嗎？{scolder}追到你新公司繼續監督你！",
+                "顏文字": "老闆還發顏文字裝可愛？你以為這樣就能洗白黑心？更看不起你了，員工看到只會更想離職！"
+            },
+            "無業遊民": {
+                "不服氣": "無業遊民還不服氣？整天在家躺還敢頂嘴？你有什麼資格不服？",
+                "求饒": "求饒了？現在知道丟臉了？天天吃父母的還敢求饒？滾出去找工作！",
+                "嘴硬": "嘴硬？好啊！{scolder}直接把你的事跡po網，讓大家看看什麼叫極品廢物！",
+                "自嘲": "自嘲自己是尼特？恭喜你說對了，但這還不夠，明天開始不給飯吃直到你找到工作！",
+                "哭": "哭了？沒錢沒工作的时候怎麼不哭？現在哭也沒人同情你這寄生蟲！",
+                "挑釁": "無業遊民還敢挑釁？{scolder}直接把你踢出家門，看你能囂張多久！",
+                "認錯": "認錯了？那就馬上出去投履歷！一天投不到十份就別想回家！",
+                "逃跑": "想逃？無業遊民能逃到哪去？{scolder}天天在你社群下面留言提醒你多廢！",
+                "顏文字": "發顏文字博同情？無業遊民還想裝可憐？你以為這樣就有人養你？更噁心，趕快給我消失！"
+            },
+            "其他": {
+                "不服氣": "連職業都說是其他，還敢不服氣？你到底有什麼好不服的廢物？",
+                "求饒": "求饒？什麼都不行的你也配求饒？先找到自己存在價值再說吧！",
+                "嘴硬": "嘴硬？好！{scolder}直接無視你這種其他類型的存在，看你還硬不硬！",
+                "自嘲": "自嘲自己什麼都不是？至少還有自知之明，但這還不夠，給我去找個正經分類！",
+                "哭": "哭了？什麼都不會的人哭最沒說服力，哭完趕快去學點技能！",
+                "挑釁": "還敢挑釁？其他類型的你有什麼本錢挑釁？滾遠點！",
+                "認錯": "認錯了？那就先承認自己是廢物，然後努力變成有用的人吧！",
+                "逃跑": "想逃？其他類型的你逃到哪都一樣沒用，{scolder}繼續看著你笑！",
+                "顏文字": "發顏文字想博關注？其他類型的你發什麼都沒人care，只顯得更可悲！"
+            }
         };
 
-        const quickRepliesPool = [
+        // 文字快速回覆
+        const textRepliesPool = [
             "不服氣啊？有種再說",
             "好啦我錯了別罵了",
             "你能再狠一點嗎？",
@@ -328,14 +337,13 @@
             "我跑了掰掰"
         ];
 
-        // 元素
+        // 顏文字選項
+        const emojiReplies = ["😭", "😂", "😡", "🙏", "🤬", "🖕"];
+
         const chatContainer = document.getElementById('chatContainer');
         const quickReplies = document.getElementById('quickReplies');
         const scolderNameSpan = document.getElementById('scolderName');
-        const stickerPanel = document.getElementById('stickerPanel');
-        const stickerBtn = document.getElementById('stickerBtn');
         const backBtn = document.querySelector('.backBtn');
-        const bottomBar = document.getElementById('bottomBar');
         const sendSound = document.getElementById('sendSound');
         const receiveSound = document.getElementById('receiveSound');
         const startScreen = document.getElementById('startScreen');
@@ -345,7 +353,6 @@
         let currentScolder = "";
         let audioUnlocked = false;
 
-        // 解鎖音效（點擊開始按鈕時解鎖）
         function unlockAudio() {
             if (audioUnlocked) return;
             sendSound.play().catch(() => {});
@@ -360,21 +367,19 @@
             return now.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
         }
 
-        function addMessage(content, sender, isSticker = false) {
+        function addMessage(content, sender, isEmoji = false) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${sender}`;
-            if (isSticker) {
-                const img = document.createElement('img');
-                img.src = content;
-                img.className = 'sticker';
-                img.alt = '貼圖';
-                msgDiv.appendChild(img);
-            } else {
-                const bubble = document.createElement('div');
-                bubble.className = 'bubble';
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            if (isEmoji) {
+                bubble.classList.add('emoji-sticker');
                 bubble.textContent = content;
-                msgDiv.appendChild(bubble);
+            } else {
+                bubble.textContent = content;
             }
+            msgDiv.appendChild(bubble);
+
             const meta = document.createElement('div');
             meta.className = 'meta';
             meta.textContent = getTime();
@@ -419,83 +424,60 @@
 
         function showQuickReplies() {
             quickReplies.innerHTML = '';
-            const shuffled = [...quickRepliesPool].sort(() => 0.5 - Math.random());
-            shuffled.slice(0, 3).forEach(text => {
+            // 隨機選 4 個文字 + 全部 6 個顏文字（總共 10 個選項）
+            const shuffledText = [...textRepliesPool].sort(() => 0.5 - Math.random()).slice(0, 4);
+            const allOptions = [...shuffledText, ...emojiReplies];
+
+            // 再打亂一次
+            allOptions.sort(() => 0.5 - Math.random()).forEach(item => {
                 const btn = document.createElement('button');
                 btn.className = 'replyBtn';
-                btn.textContent = text;
-                btn.setAttribute('aria-label', `快速回覆：${text}`);
-                btn.onclick = () => userReply(text);
+                if (emojiReplies.includes(item)) {
+                    btn.classList.add('emoji');
+                }
+                btn.textContent = item;
+                btn.setAttribute('aria-label', emojiReplies.includes(item) ? `發顏文字 ${item}` : `快速回覆：${item}`);
+                btn.onclick = () => userReply(item);
                 quickReplies.appendChild(btn);
             });
         }
 
-        function userReply(text) {
-            addMessage(text, 'user');
+        function getAttitude(content) {
+            if (emojiReplies.includes(content)) return "顏文字";
+            if (content.includes("不服氣") || content.includes("有種")) return "不服氣";
+            if (content.includes("錯了") || content.includes("對不起")) return "求饒";
+            if (content.includes("狠") || content.includes("互相") || content.includes("來啊")) return "挑釁";
+            if (content.includes("廢物")) return "自嘲";
+            if (content.includes("哭")) return "哭";
+            if (content.includes("認錯")) return "認錯";
+            if (content.includes("跑") || content.includes("掰掰")) return "逃跑";
+            return "嘴硬";
+        }
+
+        function userReply(content) {
+            const isEmoji = emojiReplies.includes(content);
+            addMessage(content, 'user', isEmoji);
             if (audioUnlocked) sendSound.play().catch(() => {});
             quickReplies.innerHTML = '';
-            stickerPanel.style.display = 'none';
 
             setTimeout(() => {
-                let attitude = "嘴硬";
-                if (text.includes("不服氣") || text.includes("有種")) attitude = "不服氣";
-                else if (text.includes("錯了") || text.includes("對不起")) attitude = "求饒";
-                else if (text.includes("狠") || text.includes("互相") || text.includes("來啊")) attitude = "嘴硬";
-                else if (text.includes("廢物")) attitude = "自嘲";
-                else if (text.includes("哭")) attitude = "哭";
-                else if (text.includes("挑釁")) attitude = "挑釁";
-                else if (text.includes("認錯")) attitude = "認錯";
-                else if (text.includes("跑") || text.includes("掰掰")) attitude = "逃跑";
-
-                let reply = followUpScolds[attitude];
-                reply = reply.replace(/{job}/g, currentJob).replace(/{scolder}/g, currentScolder);
+                const attitude = getAttitude(content);
+                let reply = jobResponses[currentJob][attitude] || jobResponses[currentJob]["嘴硬"];
+                reply = reply.replace(/{scolder}/g, currentScolder);
                 typeMessage(reply, 'scolder', showQuickReplies);
             }, 1200 + Math.random() * 1000);
         }
 
-        // 貼圖功能
-        stickerBtn.onclick = (e) => {
-            e.stopPropagation();
-            stickerPanel.style.display = stickerPanel.style.display === 'flex' ? 'none' : 'flex';
-        };
-
-        document.querySelectorAll('.stickerOption').forEach(img => {
-            img.onclick = (e) => {
-                e.stopPropagation();
-                addMessage(img.src, 'user', true);
-                if (audioUnlocked) sendSound.play().catch(() => {});
-                stickerPanel.style.display = 'none';
-                quickReplies.innerHTML = '';
-
-                setTimeout(() => {
-                    let reply = followUpScolds["貼圖"];
-                    reply = reply.replace(/{job}/g, currentJob).replace(/{scolder}/g, currentScolder);
-                    typeMessage(reply, 'scolder', showQuickReplies);
-                }, 1500);
-            };
-        });
-
-        // 點擊外部關閉貼圖面板（但不包含 bottomBar）
-        document.addEventListener('click', () => {
-            if (stickerPanel.style.display === 'flex') {
-                stickerPanel.style.display = 'none';
-            }
-        });
-        bottomBar.addEventListener('click', (e) => e.stopPropagation());
-
-        // 重新開始
         backBtn.onclick = () => {
             startScreen.style.display = 'flex';
             chatInterface.style.display = 'none';
             chatContainer.innerHTML = '';
             quickReplies.innerHTML = '';
-            stickerPanel.style.display = 'none';
         };
 
-        // 開始遊戲
         document.getElementById('scoldForm').addEventListener('submit', e => {
             e.preventDefault();
-            unlockAudio(); // 解鎖音效
+            unlockAudio();
             currentJob = document.getElementById('job').value;
             currentScolder = document.getElementById('scolder').value;
             if (!currentJob || !currentScolder) return;
